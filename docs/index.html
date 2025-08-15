@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HH KZ CAD Jobs API</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f6f8fa;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #24292e;
+            border-bottom: 3px solid #0366d6;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #24292e;
+            margin-top: 30px;
+        }
+        .endpoint {
+            background: #f1f3f4;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border-left: 4px solid #0366d6;
+        }
+        .method {
+            background: #0366d6;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-weight: bold;
+            display: inline-block;
+            margin-right: 10px;
+        }
+        .url {
+            font-family: monospace;
+            background: #f6f8fa;
+            padding: 5px 10px;
+            border-radius: 3px;
+            color: #24292e;
+        }
+        .example {
+            background: #f6f8fa;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .btn {
+            background: #0366d6;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            display: inline-block;
+            margin: 5px;
+        }
+        .btn:hover {
+            background: #0256cc;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 HH KZ CAD Jobs API</h1>
+        
+        <div class="warning">
+            <strong>⚠️ Important:</strong> This is a static documentation page. The actual API needs to be running on a server to work.
+        </div>
+
+        <h2>📋 About This API</h2>
+        <p>This FastAPI application searches for CAD-related jobs in Kazakhstan using the HeadHunter API. It specifically looks for jobs requiring skills in:</p>
+        <ul>
+            <li>AutoCAD</li>
+            <li>Revit</li>
+            <li>Inventor</li>
+            <li>Fusion 360</li>
+            <li>Advance Steel</li>
+            <li>And other CAD software</li>
+        </ul>
+
+        <h2>🔗 API Endpoints</h2>
+
+        <div class="endpoint">
+            <span class="method">GET</span>
+            <span class="url">/</span>
+            <p><strong>Web Interface</strong> - Interactive web interface for searching jobs</p>
+        </div>
+
+        <div class="endpoint">
+            <span class="method">GET</span>
+            <span class="url">/jobs</span>
+            <p><strong>API Endpoint</strong> - JSON API for searching jobs</p>
+        </div>
+
+        <h2>📝 Usage Examples</h2>
+
+        <h3>Basic Search</h3>
+        <div class="example">
+curl "https://your-api-url.com/jobs?keywords=AutoCAD&country=Kazakhstan"
+        </div>
+
+        <h3>Advanced Search with Multiple Keywords</h3>
+        <div class="example">
+curl "https://your-api-url.com/jobs?keywords=AutoCAD&keywords=Revit&country=Kazakhstan&pages=2&per_page=50"
+        </div>
+
+        <h3>Filter by Specific Products</h3>
+        <div class="example">
+curl "https://your-api-url.com/jobs?keywords=CAD&products=Fusion 360&products=Inventor&country=Kazakhstan"
+        </div>
+
+        <h2>🔧 Parameters</h2>
+        <ul>
+            <li><strong>keywords</strong> - Search keywords (default: AutoCAD,Revit,Inventor,Fusion 360,Fusion,Advance Steel)</li>
+            <li><strong>country</strong> - Country to search in (default: Kazakhstan)</li>
+            <li><strong>pages</strong> - Number of pages to search (default: 1)</li>
+            <li><strong>per_page</strong> - Results per page (default: 100)</li>
+            <li><strong>products</strong> - Filter by specific products</li>
+        </ul>
+
+        <h2>🚀 How to Run the API</h2>
+
+        <h3>Option 1: GitHub Codespaces (Recommended)</h3>
+        <div class="success">
+            <strong>✅ Easiest Method:</strong>
+            <ol>
+                <li>Go to your GitHub repository</li>
+                <li>Click "Code" → "Create codespace on main"</li>
+                <li>Wait for the environment to load</li>
+                <li>Your API will be running at <code>http://localhost:8080</code></li>
+            </ol>
+        </div>
+
+        <h3>Option 2: Docker</h3>
+        <div class="example">
+# Pull and run the container
+docker pull ghcr.io/your-username/hh-kz-cad-jobs:main
+docker run -p 8080:8080 ghcr.io/your-username/hh-kz-cad-jobs:main
+        </div>
+
+        <h3>Option 3: Local Python</h3>
+        <div class="example">
+# Clone and run locally
+git clone https://github.com/your-username/hh-kz-cad-jobs.git
+cd hh-kz-cad-jobs
+pip3 install -r requirements.txt
+python3 app.py
+        </div>
+
+        <h2>📊 Response Format</h2>
+        <div class="example">
+{
+  "query": {
+    "keywords": ["AutoCAD"],
+    "country": "Kazakhstan",
+    "pages": 1,
+    "per_page": 100
+  },
+  "count": 25,
+  "items": [
+    {
+      "id": "12345678",
+      "title": "CAD Engineer",
+      "company": "Company Name",
+      "city": "Almaty",
+      "salary": "500,000 – 800,000 KZT",
+      "url": "https://hh.ru/vacancy/12345678",
+      "mentioned_products": ["AutoCAD", "Revit"]
+    }
+  ],
+  "source": "api.hh.ru"
+}
+        </div>
+
+        <h2>🔗 Quick Links</h2>
+        <a href="#" class="btn" onclick="alert('Use GitHub Codespaces or Docker to run the API')">🚀 Run API</a>
+        <a href="https://github.com/your-username/hh-kz-cad-jobs" class="btn">📁 View Source</a>
+        <a href="https://github.com/your-username/hh-kz-cad-jobs/packages" class="btn">📦 Docker Image</a>
+
+        <div class="warning">
+            <strong>💡 Tip:</strong> The easiest way to test this API is using GitHub Codespaces. Just click "Code" → "Create codespace" in your repository!
+        </div>
+    </div>
+</body>
+</html>
