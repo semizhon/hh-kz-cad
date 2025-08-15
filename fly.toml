@@ -1,0 +1,20 @@
+app = "hh-kz-cad-jobs"
+primary_region = "iad"
+
+[build]
+
+[env]
+  HH_USER_AGENT = "HH-KZ-CAD-Jobs/1.1 (your_email@example.com)"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 256
