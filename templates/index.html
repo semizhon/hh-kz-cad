@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HH Job Market Analysis - CRM Interface</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+        }
+
+        .header {
+            background: #ffffff;
+            color: #212529;
+            padding: 20px 0;
+            border-bottom: 1px solid #f1f3f4;
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .search-panel {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            flex-shrink: 0;
+        }
+
+        .search-form {
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr 1fr 1fr auto;
+            gap: 15px;
+            align-items: end;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #555;
+            font-size: 0.9em;
+        }
+
+        .form-group input, .form-group select {
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+
+
+        .search-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform 0.2s;
+        }
+
+        .search-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .stats-panel {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            flex-shrink: 0;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .stat-card {
+            text-align: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .table-container {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .table-header {
+            background: #f8f9fa;
+            padding: 20px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .table-header h3 {
+            margin: 0;
+            color: #333;
+            font-size: 1.3em;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        .data-table th {
+            background: #f8f9fa;
+            padding: 15px 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #555;
+            border-bottom: 2px solid #e9ecef;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            position: relative;
+        }
+
+        .data-table th:hover {
+            background: #e9ecef;
+        }
+
+        .data-table th.sortable::after {
+            content: '↕';
+            position: absolute;
+            right: 8px;
+            opacity: 0.5;
+        }
+
+        .data-table th.sort-asc::after {
+            content: '↑';
+            opacity: 1;
+        }
+
+        .data-table th.sort-desc::after {
+            content: '↓';
+            opacity: 1;
+        }
+
+        .data-table td {
+            padding: 12px;
+            border-bottom: 1px solid #f1f3f4;
+            vertical-align: top;
+        }
+
+        .data-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .company-cell {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .company-logo {
+            width: 32px;
+            height: 32px;
+            border-radius: 4px;
+            object-fit: cover;
+            border: 1px solid #e9ecef;
+        }
+
+        .company-info {
+            flex: 1;
+        }
+
+        .company-name {
+            font-weight: 600;
+            color: #212529;
+            margin-bottom: 2px;
+        }
+
+        .company-website {
+            font-size: 0.8em;
+            color: #666;
+        }
+
+        .job-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .job-details {
+            font-size: 0.85em;
+            color: #666;
+        }
+
+        .salary {
+            font-weight: 600;
+            color: #28a745;
+        }
+
+        .phone {
+            font-family: monospace;
+            background: #f8f9fa;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.9em;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75em;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .company-group {
+            border: 1px solid #f1f3f4;
+            border-radius: 6px;
+            margin-bottom: 6px;
+            overflow: hidden;
+        }
+
+        .company-header {
+            background: #ffffff;
+            padding: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #f1f3f4;
+            transition: background-color 0.2s;
+        }
+
+        .company-header:hover {
+            background: #f8f9fa;
+        }
+
+        .company-header-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+        }
+
+        .company-header-info {
+            flex: 1;
+        }
+
+        .company-header-name {
+            font-weight: 600;
+            color: #212529;
+            margin-bottom: 2px;
+        }
+
+        .company-header-stats {
+            font-size: 0.85em;
+            color: #666;
+        }
+
+        .collapse-btn {
+            background: none;
+            border: 1px solid #e1e5e9;
+            font-size: 14px;
+            cursor: pointer;
+            color: #6c757d;
+            padding: 6px 10px;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            font-weight: 500;
+            min-width: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .collapse-btn:hover {
+            background: #f8f9fa;
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        .company-jobs {
+            max-height: 400px;
+            overflow: hidden;
+            transition: max-height 0.3s ease-in-out;
+        }
+
+        .company-jobs.collapsed {
+            max-height: 0;
+        }
+
+        .company-jobs.expanded {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .company-jobs-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .company-jobs-table th {
+            background: #f8f9fa;
+            padding: 8px 12px;
+            text-align: left;
+            font-size: 0.85em;
+            color: #555;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .company-jobs-table td {
+            padding: 8px 12px;
+            border-bottom: 1px solid #f1f3f4;
+            font-size: 0.9em;
+        }
+
+        .company-jobs-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .global-controls {
+            margin-bottom: 16px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .global-controls-left {
+            display: flex;
+            gap: 8px;
+        }
+
+        .global-controls-right {
+            display: flex;
+            align-items: center;
+        }
+
+        .global-btn {
+            background: #ffffff;
+            color: #495057;
+            border: 1px solid #e1e5e9;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85em;
+            transition: all 0.2s;
+        }
+
+        .global-btn:hover {
+            background: #f8f9fa;
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        .global-btn.secondary {
+            background: #ffffff;
+            color: #6c757d;
+            border: 1px solid #e1e5e9;
+        }
+
+        .global-btn.secondary:hover {
+            background: #f8f9fa;
+            border-color: #6c757d;
+        }
+
+        .filter-controls {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            margin-left: 20px;
+        }
+
+        .filter-controls label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.9em;
+            color: #666;
+        }
+
+
+
+        .filter-controls input {
+            width: 60px;
+            padding: 4px 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.85em;
+        }
+
+        .company-products {
+            margin-top: 6px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+
+        .product-tag {
+            background: #f8f9fa;
+            color: #495057;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75em;
+            font-weight: 500;
+            border: 1px solid #e9ecef;
+            transition: all 0.2s ease;
+        }
+
+        .product-tag:hover {
+            background: #e9ecef;
+            color: #212529;
+        }
+
+        .company-group.hidden {
+            display: none;
+        }
+
+        #companyGroups {
+            padding-right: 10px;
+        }
+
+        .badge-primary {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .badge-success {
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+
+        .badge-warning {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .loading::after {
+            content: '';
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .export-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
+            margin-left: 10px;
+        }
+
+        .export-btn:hover {
+            background: #218838;
+        }
+
+        @media (max-width: 768px) {
+            .search-form {
+                grid-template-columns: 1fr;
+            }
+            
+            .data-table {
+                font-size: 12px;
+            }
+            
+            .data-table th, .data-table td {
+                padding: 8px 6px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <h1>HH Job Market Analysis</h1>
+            <p>Professional CRM Interface for CAD Job Market Analysis</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="search-panel">
+            <form class="search-form" id="searchForm">
+                <div class="form-group">
+                    <label for="country">Country</label>
+                    <select id="country" name="country">
+                        <option value="Kazakhstan" selected>Kazakhstan</option>
+                        <option value="Russia">Russia</option>
+                        <option value="Ukraine">Ukraine</option>
+                        <option value="Belarus">Belarus</option>
+                        <option value="Uzbekistan">Uzbekistan</option>
+                        <option value="Kyrgyzstan">Kyrgyzstan</option>
+                        <option value="Tajikistan">Tajikistan</option>
+                        <option value="Turkmenistan">Turkmenistan</option>
+                        <option value="Azerbaijan">Azerbaijan</option>
+                        <option value="Georgia">Georgia</option>
+                        <option value="Armenia">Armenia</option>
+                        <option value="Moldova">Moldova</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="keywords">Keywords (comma-separated)</label>
+                    <input type="text" id="keywords" name="keywords" value="Revit, Civil 3d, AutoCAD, navisworks, bim360, autodesk, fusion, powermill, featurecam, inventor" placeholder="Enter keywords...">
+                </div>
+                <div class="form-group">
+                    <label for="pages">Pages</label>
+                                            <input type="number" id="pages" name="pages" value="100" min="1">
+                </div>
+                <div class="form-group">
+                    <label for="per_page">Results per page</label>
+                                            <input type="number" id="per_page" name="per_page" value="100" min="1">
+                </div>
+
+                <div class="form-group">
+                    <label>&nbsp;</label>
+                    <button type="submit" class="search-btn">Search Jobs</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="stats-panel" id="statsPanel" style="display: none;">
+            <div class="stats-grid" id="statsGrid">
+                <!-- Stats will be populated here -->
+            </div>
+        </div>
+
+        <div class="table-container" id="tableContainer" style="display: none;">
+            <div class="table-header">
+                <h3>Job Results <button class="export-btn" onclick="exportToCSV()">Export to CSV</button></h3>
+            </div>
+            <div class="global-controls">
+                <div class="global-controls-left">
+                    <button class="global-btn" onclick="expandAll()">Expand All</button>
+                    <button class="global-btn secondary" onclick="collapseAll()">Collapse All</button>
+                </div>
+                <div class="filter-controls">
+                    <button class="global-btn secondary" onclick="sortByFilter('cad')">Sort by CAD Jobs</button>
+                    <button class="global-btn secondary" onclick="sortByFilter('total')">Sort by Total Jobs</button>
+                </div>
+                <div class="global-controls-right">
+                    <span style="color: #666; font-size: 0.9em;">
+                        <span id="companyCount">0</span> companies, <span id="jobCount">0</span> jobs
+                    </span>
+                </div>
+            </div>
+            <div id="companyGroups">
+                <!-- Company groups will be populated here -->
+            </div>
+        </div>
+
+        <div class="loading" id="loading" style="display: none;">
+            Searching for jobs...
+        </div>
+
+        <div class="no-results" id="noResults" style="display: none;">
+            No jobs found matching your criteria
+        </div>
+    </div>
+
+    <script>
+        let currentData = [];
+        let currentSort = { column: null, direction: 'asc' };
+
+        document.getElementById('searchForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            searchJobs();
+        });
+
+        function searchJobs() {
+            const formData = new FormData(document.getElementById('searchForm'));
+            const params = new URLSearchParams();
+            
+            // Handle keywords
+            const keywords = formData.get('keywords').split(',').map(k => k.trim());
+            keywords.forEach(keyword => {
+                params.append('keywords', keyword);
+            });
+            
+            // Add country parameter
+            params.append('country', formData.get('country'));
+            params.append('pages', formData.get('pages'));
+            params.append('per_page', formData.get('per_page'));
+            
+
+
+            showLoading();
+            
+            fetch(`/jobs?${params.toString()}`)
+                .then(response => response.json())
+                .then(data => {
+                    hideLoading();
+                    if (data.error) {
+                        showError(data.error);
+                    } else {
+                        displayResults(data);
+                    }
+                })
+                .catch(error => {
+                    hideLoading();
+                    showError('Failed to fetch data: ' + error.message);
+                });
+        }
+
+        function showLoading() {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('tableContainer').style.display = 'none';
+            document.getElementById('statsPanel').style.display = 'none';
+            document.getElementById('noResults').style.display = 'none';
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        function showError(message) {
+            document.getElementById('noResults').innerHTML = `Error: ${message}`;
+            document.getElementById('noResults').style.display = 'block';
+        }
+
+        function displayResults(data) {
+            currentData = data.items || [];
+            
+            if (currentData.length === 0) {
+                document.getElementById('noResults').style.display = 'block';
+                return;
+            }
+
+            displayStats(data);
+            displayTable(currentData);
+        }
+
+        function displayStats(data) {
+            const stats = calculateStats(data.items);
+            const statsGrid = document.getElementById('statsGrid');
+            
+            statsGrid.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-number">${stats.totalJobs}</div>
+                    <div class="stat-label">Total Jobs</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${stats.uniqueCompanies}</div>
+                    <div class="stat-label">Unique Companies</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${stats.companiesWithPhone}</div>
+                    <div class="stat-label">With Phone Numbers</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${stats.avgSalary}</div>
+                    <div class="stat-label">Avg Salary (KZT)</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${stats.totalVacancies}</div>
+                    <div class="stat-label">Total Company Vacancies</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${stats.cadVacancies}</div>
+                    <div class="stat-label">CAD-Related Vacancies</div>
+                </div>
+            `;
+            
+            document.getElementById('statsPanel').style.display = 'block';
+        }
+
+        function calculateStats(jobs) {
+            const companies = new Set();
+            const companiesWithPhone = new Set();
+            let totalSalary = 0;
+            let salaryCount = 0;
+            let totalVacancies = 0;
+            let cadVacancies = 0;
+
+            jobs.forEach(job => {
+                companies.add(job.company);
+                if (job.company_phone) companiesWithPhone.add(job.company);
+                if (job.total_vacancies) totalVacancies += job.total_vacancies;
+                if (job.autodesk_vacancies) cadVacancies += job.autodesk_vacancies;
+                
+                if (job.salary_raw && job.salary_raw.from) {
+                    totalSalary += job.salary_raw.from;
+                    salaryCount++;
+                }
+            });
+
+            return {
+                totalJobs: jobs.length,
+                uniqueCompanies: companies.size,
+                companiesWithPhone: companiesWithPhone.size,
+                avgSalary: salaryCount > 0 ? Math.round(totalSalary / salaryCount).toLocaleString() : 'N/A',
+                totalVacancies: totalVacancies,
+                cadVacancies: cadVacancies
+            };
+        }
+
+        function displayTable(jobs) {
+            // Group jobs by company
+            const companyGroups = {};
+            jobs.forEach(job => {
+                const companyName = job.company || 'Unknown Company';
+                if (!companyGroups[companyName]) {
+                    companyGroups[companyName] = {
+                        company: job.company,
+                        company_logo: job.company_logo,
+                        company_website: job.company_website,
+                        company_phone: job.company_phone,
+                        total_vacancies: job.total_vacancies,
+                        autodesk_vacancies: 0, // Will be calculated from actual jobs
+                        products: new Set(), // Track mentioned products
+                        jobs: []
+                    };
+                }
+                companyGroups[companyName].jobs.push(job);
+                // Add all mentioned products
+                if (job.mentioned_products) {
+                    job.mentioned_products.forEach(product => {
+                        companyGroups[companyName].products.add(product);
+                    });
+                } else if (job.source_keyword) {
+                    // Fallback to source keyword if mentioned_products not available
+                    companyGroups[companyName].products.add(job.source_keyword);
+                }
+            });
+
+            // Calculate actual CAD jobs for each company
+            Object.keys(companyGroups).forEach(companyName => {
+                const group = companyGroups[companyName];
+                group.autodesk_vacancies = group.jobs.length; // Each job in our results is CAD-related
+            });
+
+            const companyGroupsContainer = document.getElementById('companyGroups');
+            companyGroupsContainer.innerHTML = '';
+
+            Object.keys(companyGroups).forEach(companyName => {
+                const group = companyGroups[companyName];
+                const groupDiv = document.createElement('div');
+                groupDiv.className = 'company-group';
+                groupDiv.dataset.company = companyName;
+
+                const jobCount = group.jobs.length;
+                const totalVacancies = group.total_vacancies || 0;
+                const cadVacancies = group.autodesk_vacancies || 0;
+                const productsList = Array.from(group.products).join(', ');
+
+                groupDiv.innerHTML = `
+                    <div class="company-header" onclick="toggleCompany('${companyName}')">
+                        <div class="company-header-left">
+                            ${group.company_logo ? `<img src="${group.company_logo}" alt="${companyName}" class="company-logo">` : ''}
+                            <div class="company-header-info">
+                                <div class="company-header-name">${companyName}</div>
+                                <div class="company-header-stats">
+                                    ${jobCount} job${jobCount !== 1 ? 's' : ''} • 
+                                    Total jobs: ${totalVacancies} • 
+                                    CAD jobs: ${cadVacancies}
+                                    ${group.company_phone ? ` • Phone: ${group.company_phone}` : ''}
+                                </div>
+                                ${productsList ? `<div class="company-products">${productsList.split(', ').map(product => `<span class="product-tag">${product}</span>`).join('')}</div>` : ''}
+                            </div>
+                        </div>
+                        <button class="collapse-btn" onclick="event.stopPropagation(); toggleCompany('${companyName}')">▶</button>
+                    </div>
+                    <div class="company-jobs collapsed" id="jobs-${companyName.replace(/[^a-zA-Z0-9]/g, '_')}">
+                        <table class="company-jobs-table">
+                            <thead>
+                                <tr>
+                                    <th>Job Title</th>
+                                    <th>Location</th>
+                                    <th>Salary</th>
+                                    <th>Published</th>
+                                    <th>Employment</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${group.jobs.map(job => `
+                                    <tr>
+                                        <td>
+                                            <div class="job-title">${job.title}</div>
+                                            <div class="job-details">
+                                                ${job.mentioned_products ? job.mentioned_products.map(product => `<span class="badge badge-primary">${product}</span>`).join('') : `<span class="badge badge-primary">${job.source_keyword}</span>`}
+                                                ${job.employment ? `<span class="badge badge-success">${job.employment}</span>` : ''}
+                                            </div>
+                                        </td>
+                                        <td>${job.city || 'N/A'}</td>
+                                        <td class="salary">${job.salary || 'N/A'}</td>
+                                        <td>${formatDate(job.published_at)}</td>
+                                        <td>${job.employment || 'N/A'}</td>
+                                        <td>
+                                            <a href="${job.url}" target="_blank" style="color: #667eea; text-decoration: none;">View →</a>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+
+                companyGroupsContainer.appendChild(groupDiv);
+            });
+
+            // Update counters
+            updateCounts();
+
+            document.getElementById('tableContainer').style.display = 'block';
+        }
+
+        function toggleCompany(companyName) {
+            const jobsContainer = document.getElementById(`jobs-${companyName.replace(/[^a-zA-Z0-9]/g, '_')}`);
+            const collapseBtn = jobsContainer.previousElementSibling.querySelector('.collapse-btn');
+            
+            if (jobsContainer.classList.contains('collapsed')) {
+                jobsContainer.classList.remove('collapsed');
+                jobsContainer.classList.add('expanded');
+                collapseBtn.textContent = '▼';
+            } else {
+                jobsContainer.classList.remove('expanded');
+                jobsContainer.classList.add('collapsed');
+                collapseBtn.textContent = '▶';
+            }
+        }
+
+        function expandAll() {
+            document.querySelectorAll('.company-jobs').forEach(container => {
+                container.classList.remove('collapsed');
+                container.classList.add('expanded');
+                const collapseBtn = container.previousElementSibling.querySelector('.collapse-btn');
+                collapseBtn.textContent = '▼';
+            });
+        }
+
+        function collapseAll() {
+            document.querySelectorAll('.company-jobs').forEach(container => {
+                container.classList.remove('expanded');
+                container.classList.add('collapsed');
+                const collapseBtn = container.previousElementSibling.querySelector('.collapse-btn');
+                collapseBtn.textContent = '▶';
+            });
+        }
+
+        function updateCounts() {
+            const totalCompanies = document.querySelectorAll('.company-group').length;
+            const totalJobs = Array.from(document.querySelectorAll('.company-group'))
+                .reduce((sum, group) => {
+                    const statsText = group.querySelector('.company-header-stats').textContent;
+                    const jobMatch = statsText.match(/(\d+) job/);
+                    return sum + (jobMatch ? parseInt(jobMatch[1]) : 0);
+                }, 0);
+            
+            document.getElementById('companyCount').textContent = totalCompanies;
+            document.getElementById('jobCount').textContent = totalJobs;
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric' 
+            });
+        }
+
+        let currentFilterSort = { column: null, direction: 'asc' };
+
+        function sortByFilter(column) {
+            const direction = currentFilterSort.column === column && currentFilterSort.direction === 'asc' ? 'desc' : 'asc';
+            
+            // Update button text to show current sort direction
+            const buttons = document.querySelectorAll('.filter-controls .global-btn');
+            buttons.forEach(btn => {
+                if (btn.textContent.includes('CAD Jobs') && column === 'cad') {
+                    btn.textContent = `Sort by CAD Jobs ${direction === 'asc' ? '(Low→High)' : '(High→Low)'}`;
+                } else if (btn.textContent.includes('Total Jobs') && column === 'total') {
+                    btn.textContent = `Sort by Total Jobs ${direction === 'asc' ? '(Low→High)' : '(High→Low)'}`;
+                } else {
+                    // Reset other buttons
+                    if (btn.textContent.includes('CAD Jobs')) {
+                        btn.textContent = 'Sort by CAD Jobs';
+                    } else if (btn.textContent.includes('Total Jobs')) {
+                        btn.textContent = 'Sort by Total Jobs';
+                    }
+                }
+            });
+            
+            currentFilterSort = { column, direction };
+            
+            // Get all company groups and sort them
+            const companyGroups = Array.from(document.querySelectorAll('.company-group'));
+            
+            companyGroups.sort((a, b) => {
+                const statsA = a.querySelector('.company-header-stats').textContent;
+                const statsB = b.querySelector('.company-header-stats').textContent;
+                
+                let valueA, valueB;
+                
+                if (column === 'cad') {
+                    const cadMatchA = statsA.match(/CAD jobs: (\d+)/);
+                    const cadMatchB = statsB.match(/CAD jobs: (\d+)/);
+                    valueA = cadMatchA ? parseInt(cadMatchA[1]) : 0;
+                    valueB = cadMatchB ? parseInt(cadMatchB[1]) : 0;
+                } else if (column === 'total') {
+                    const totalMatchA = statsA.match(/Total jobs: (\d+)/);
+                    const totalMatchB = statsB.match(/Total jobs: (\d+)/);
+                    valueA = totalMatchA ? parseInt(totalMatchA[1]) : 0;
+                    valueB = totalMatchB ? parseInt(totalMatchB[1]) : 0;
+                }
+                
+                if (direction === 'asc') {
+                    return valueA - valueB;
+                } else {
+                    return valueB - valueA;
+                }
+            });
+            
+            // Reorder the DOM elements
+            const container = document.getElementById('companyGroups');
+            companyGroups.forEach(group => {
+                container.appendChild(group);
+            });
+        }
+
+        function exportToCSV() {
+            if (currentData.length === 0) return;
+            
+            const headers = ['Company', 'Job Title', 'Location', 'Salary', 'Published', 'Total Jobs', 'CAD Jobs', 'Phone', 'Employment', 'URL'];
+            const csvContent = [
+                headers.join(','),
+                ...currentData.map(job => [
+                    `"${job.company || ''}"`,
+                    `"${job.title || ''}"`,
+                    `"${job.city || ''}"`,
+                    `"${job.salary || ''}"`,
+                    `"${formatDate(job.published_at)}"`,
+                    job.total_vacancies || 0,
+                    job.autodesk_vacancies || 0,
+                    `"${job.company_phone || ''}"`,
+                    `"${job.employment || ''}"`,
+                    `"${job.url || ''}"`
+                ].join(','))
+            ].join('\n');
+            
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'cad_jobs_kazakhstan.csv');
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Initial search
+        searchJobs();
+    </script>
+</body>
+</html>
