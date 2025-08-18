@@ -1,6 +1,9 @@
 
 # app.py
-import os, time, requests
+import os, time, requests, json
+from datetime import date, datetime
+from pathlib import Path
+from typing import Optional
 from typing import List, Dict, Any
 from fastapi import FastAPI, Query, Request
 from fastapi.responses import JSONResponse, HTMLResponse
@@ -27,6 +30,41 @@ def cache_get(key, ttl_sec=180):
 
 def cache_set(key, data):
     _cache[key] = (time.time(), data)
+
+# --- daily snapshot cache (persisted to disk) ---
+DAILY_CACHE_DIR = Path(os.environ.get("DAILY_CACHE_DIR", "daily_cache"))
+DAILY_SNAPSHOT_FILE = DAILY_CACHE_DIR / "jobs_snapshot.json"
+
+def _today_str() -> str:
+    return date.today().isoformat()
+
+def read_daily_snapshot_if_fresh() -> Optional[Dict[str, Any]]:
+    try:
+        if not DAILY_SNAPSHOT_FILE.exists():
+            return None
+        with DAILY_SNAPSHOT_FILE.open("r", encoding="utf-8") as f:
+            snapshot = json.load(f)
+        if snapshot.get("date") == _today_str():
+            return snapshot
+        return None
+    except Exception:
+        # On any read/parse error, ignore snapshot
+        return None
+
+def write_daily_snapshot(payload: Dict[str, Any], request_params: Dict[str, Any]) -> None:
+    try:
+        DAILY_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+        snapshot = {
+            "date": _today_str(),
+            "created_at": datetime.now().isoformat(timespec="seconds"),
+            "request_params": request_params,
+            "payload": payload,
+        }
+        with DAILY_SNAPSHOT_FILE.open("w", encoding="utf-8") as f:
+            json.dump(snapshot, f, ensure_ascii=False)
+    except Exception:
+        # Best-effort persistence; don't crash request handler
+        pass
 
 def hh_get(path, params=None):
     r = requests.get(
@@ -277,8 +315,14 @@ def get_jobs(
     per_page: int = Query(default=100),
     products: List[str] = Query(default=[], description="Filter by specific products"),
 ):
+    # 1) Serve today's persisted snapshot if present (global for the day)
+    daily_snapshot = read_daily_snapshot_if_fresh()
+    if daily_snapshot and daily_snapshot.get("payload"):
+        return JSONResponse(daily_snapshot["payload"])
+
+    # 2) Fallback to short-lived in-memory cache (prevents duplicate work within a couple of minutes)
     cache_key = f"jobs:{country}:{','.join(keywords)}:{pages}:{per_page}:{','.join(products)}"
-    cached = cache_get(cache_key, ttl_sec=120)  # short cache
+    cached = cache_get(cache_key, ttl_sec=120)
     if cached:
         return JSONResponse(cached)
 
@@ -294,6 +338,18 @@ def get_jobs(
         "source": "api.hh.ru",
     }
     cache_set(cache_key, payload)
+
+    # 3) Persist as today's snapshot so subsequent requests serve the same data today
+    write_daily_snapshot(
+        payload=payload,
+        request_params={
+            "keywords": keywords,
+            "country": country,
+            "pages": pages,
+            "per_page": per_page,
+            "products": products,
+        },
+    )
     return JSONResponse(payload)
 
 if __name__ == "__main__":
