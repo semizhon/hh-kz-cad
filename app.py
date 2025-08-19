@@ -1,6 +1,7 @@
 
 # app.py
 import os, time, requests, json
+import hashlib
 from datetime import date, datetime
 from pathlib import Path
 from typing import Optional
@@ -33,19 +34,43 @@ def cache_set(key, data):
 
 # --- daily snapshot cache (persisted to disk) ---
 DAILY_CACHE_DIR = Path(os.environ.get("DAILY_CACHE_DIR", "daily_cache"))
-DAILY_SNAPSHOT_FILE = DAILY_CACHE_DIR / "jobs_snapshot.json"
 
 def _today_str() -> str:
     return date.today().isoformat()
 
-def read_daily_snapshot_if_fresh() -> Optional[Dict[str, Any]]:
+def _stable_params(params: Dict[str, Any]) -> Dict[str, Any]:
+    """Create a stable copy of request params for hashing and comparison.
+    Sort lists like keywords/products to avoid different order producing different hashes.
+    """
+    stable = dict(params)
+    for key in ("keywords", "products"):
+        if key in stable and isinstance(stable[key], list):
+            stable[key] = sorted(stable[key])
+    return stable
+
+
+def _snapshot_path_for(request_params: Dict[str, Any]) -> Path:
+    """Return the file path for today's snapshot for a given request signature."""
+    today_dir = DAILY_CACHE_DIR / _today_str()
+    today_dir.mkdir(parents=True, exist_ok=True)
+    stable = _stable_params(request_params)
+    digest = hashlib.sha1(json.dumps(stable, ensure_ascii=False, sort_keys=True).encode("utf-8")).hexdigest()[:16]
+    return today_dir / f"jobs_{digest}.json"
+
+
+def read_daily_snapshot_if_fresh(request_params: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     try:
-        if not DAILY_SNAPSHOT_FILE.exists():
+        path = _snapshot_path_for(request_params)
+        if not path.exists():
             return None
-        with DAILY_SNAPSHOT_FILE.open("r", encoding="utf-8") as f:
+        with path.open("r", encoding="utf-8") as f:
             snapshot = json.load(f)
         if snapshot.get("date") == _today_str():
-            return snapshot
+            # Extra safety: ensure the stored params match the current ones (order-insensitive for lists)
+            stored = _stable_params(snapshot.get("request_params", {}))
+            incoming = _stable_params(request_params)
+            if stored == incoming:
+                return snapshot
         return None
     except Exception:
         # On any read/parse error, ignore snapshot
@@ -53,14 +78,14 @@ def read_daily_snapshot_if_fresh() -> Optional[Dict[str, Any]]:
 
 def write_daily_snapshot(payload: Dict[str, Any], request_params: Dict[str, Any]) -> None:
     try:
-        DAILY_CACHE_DIR.mkdir(parents=True, exist_ok=True)
         snapshot = {
             "date": _today_str(),
             "created_at": datetime.now().isoformat(timespec="seconds"),
-            "request_params": request_params,
+            "request_params": _stable_params(request_params),
             "payload": payload,
         }
-        with DAILY_SNAPSHOT_FILE.open("w", encoding="utf-8") as f:
+        path = _snapshot_path_for(request_params)
+        with path.open("w", encoding="utf-8") as f:
             json.dump(snapshot, f, ensure_ascii=False)
     except Exception:
         # Best-effort persistence; don't crash request handler
@@ -314,11 +339,22 @@ def get_jobs(
     pages: int = Query(default=1),
     per_page: int = Query(default=100),
     products: List[str] = Query(default=[], description="Filter by specific products"),
+    refresh: bool = Query(default=False, description="Force refresh, bypass daily cache"),
 ):
-    # 1) Serve today's persisted snapshot if present (global for the day)
-    daily_snapshot = read_daily_snapshot_if_fresh()
-    if daily_snapshot and daily_snapshot.get("payload"):
-        return JSONResponse(daily_snapshot["payload"])
+    # Build canonical request signature
+    request_signature = {
+        "keywords": keywords,
+        "country": country,
+        "pages": pages,
+        "per_page": per_page,
+        "products": products,
+    }
+
+    # 1) Serve today's persisted snapshot if present for this exact request
+    if not refresh:
+        daily_snapshot = read_daily_snapshot_if_fresh(request_signature)
+        if daily_snapshot and daily_snapshot.get("payload"):
+            return JSONResponse(daily_snapshot["payload"])
 
     # 2) Fallback to short-lived in-memory cache (prevents duplicate work within a couple of minutes)
     cache_key = f"jobs:{country}:{','.join(keywords)}:{pages}:{per_page}:{','.join(products)}"
@@ -332,7 +368,7 @@ def get_jobs(
         return JSONResponse({"error": str(e)}, status_code=500)
 
     payload = {
-        "query": {"keywords": keywords, "country": country, "pages": pages, "per_page": per_page},
+        "query": {"keywords": keywords, "country": country, "pages": pages, "per_page": per_page, "products": products},
         "count": len(data),
         "items": data,
         "source": "api.hh.ru",
@@ -340,16 +376,7 @@ def get_jobs(
     cache_set(cache_key, payload)
 
     # 3) Persist as today's snapshot so subsequent requests serve the same data today
-    write_daily_snapshot(
-        payload=payload,
-        request_params={
-            "keywords": keywords,
-            "country": country,
-            "pages": pages,
-            "per_page": per_page,
-            "products": products,
-        },
-    )
+    write_daily_snapshot(payload=payload, request_params=request_signature)
     return JSONResponse(payload)
 
 if __name__ == "__main__":
