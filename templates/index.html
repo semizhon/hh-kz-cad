@@ -62,7 +62,7 @@
 
         .search-form {
             display: grid;
-            grid-template-columns: 1fr 2fr 1fr 1fr 1fr auto;
+            grid-template-columns: 1fr 2fr 1fr 1fr 1fr 1fr auto;
             gap: 15px;
             align-items: end;
         }
@@ -496,6 +496,18 @@
             color: #f57c00;
         }
 
+        .city-badge {
+            background: #e3f2fd !important;
+            color: #1976d2 !important;
+            border: 1px solid #bbdefb;
+            font-weight: 600;
+            margin-left: 8px;
+            font-size: 0.8em;
+            padding: 2px 6px;
+            border-radius: 12px;
+            display: inline-block;
+        }
+
         .loading {
             text-align: center;
             padding: 40px;
@@ -595,6 +607,10 @@
                     <label for="per_page">Results per page</label>
                                             <input type="number" id="per_page" name="per_page" value="100" min="1">
                 </div>
+                <div class="form-group">
+                    <label for="city_filter">City Filter (optional)</label>
+                    <input type="text" id="city_filter" name="city_filter" placeholder="e.g., Ташкент, Алматы" style="font-size: 0.9em;">
+                </div>
 
                 <div class="form-group">
                     <label>&nbsp;</label>
@@ -665,6 +681,12 @@
             params.append('country', formData.get('country'));
             params.append('pages', formData.get('pages'));
             params.append('per_page', formData.get('per_page'));
+            
+            // Add city filter if provided
+            const cityFilter = formData.get('city_filter');
+            if (cityFilter && cityFilter.trim()) {
+                params.append('city_filter', cityFilter.trim());
+            }
             
 
 
@@ -792,10 +814,15 @@
                         total_vacancies: job.total_vacancies,
                         autodesk_vacancies: 0, // Will be calculated from actual jobs
                         products: new Set(), // Track mentioned products
+                        cities: new Set(), // Track cities
                         jobs: []
                     };
                 }
                 companyGroups[companyName].jobs.push(job);
+                // Add city to the set
+                if (job.city) {
+                    companyGroups[companyName].cities.add(job.city);
+                }
                 // Add all mentioned products
                 if (job.mentioned_products) {
                     job.mentioned_products.forEach(product => {
@@ -826,6 +853,7 @@
                 const totalVacancies = group.total_vacancies || 0;
                 const cadVacancies = group.autodesk_vacancies || 0;
                 const productsList = Array.from(group.products).join(', ');
+                const citiesList = Array.from(group.cities).join(', ');
 
                 groupDiv.innerHTML = `
                     <div class="company-header" onclick="toggleCompany('${companyName}')">
@@ -837,6 +865,7 @@
                                     ${jobCount} job${jobCount !== 1 ? 's' : ''} • 
                                     Total jobs: ${totalVacancies} • 
                                     CAD jobs: ${cadVacancies}
+                                    ${citiesList ? ` • Cities: ${citiesList}` : ''}
                                     ${group.company_phone ? ` • Phone: ${group.company_phone}` : ''}
                                 </div>
                                 ${productsList ? `<div class="company-products">${productsList.split(', ').map(product => `<span class="product-tag">${product}</span>`).join('')}</div>` : ''}
@@ -860,7 +889,10 @@
                                 ${group.jobs.map(job => `
                                     <tr>
                                         <td>
-                                            <div class="job-title">${job.title}</div>
+                                            <div class="job-title">
+                                                ${job.title}
+                                                ${job.city ? `<span class="badge badge-warning city-badge">${job.city}</span>` : ''}
+                                            </div>
                                             <div class="job-details">
                                                 ${job.mentioned_products ? job.mentioned_products.map(product => `<span class="badge badge-primary">${product}</span>`).join('') : `<span class="badge badge-primary">${job.source_keyword}</span>`}
                                                 ${job.employment ? `<span class="badge badge-success">${job.employment}</span>` : ''}

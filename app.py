@@ -2,7 +2,8 @@
 # app.py
 import os, time, requests, json
 import hashlib
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
+from zoneinfo import ZoneInfo
 from pathlib import Path
 from typing import Optional
 from typing import List, Dict, Any
@@ -10,6 +11,7 @@ from fastapi import FastAPI, Query, Request
 from fastapi.responses import JSONResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+import asyncio
 
 HH_API = "https://api.hh.ru"
 # Use your email in UA to be a good API citizen (optional but recommended)
@@ -90,6 +92,152 @@ def write_daily_snapshot(payload: Dict[str, Any], request_params: Dict[str, Any]
     except Exception:
         # Best-effort persistence; don't crash request handler
         pass
+
+# --- Standard search cache system ---
+STANDARD_CACHE_DIR = Path("standard_cache")
+
+def _standard_cache_path(country: str) -> Path:
+    """Return the file path for standard search cache for a given country."""
+    STANDARD_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    return STANDARD_CACHE_DIR / f"standard_{country.lower()}.json"
+
+def read_standard_cache(country: str) -> Optional[Dict[str, Any]]:
+    """Read standard search cache for a country."""
+    try:
+        path = _standard_cache_path(country)
+        if not path.exists():
+            return None
+        with path.open("r", encoding="utf-8") as f:
+            cache_data = json.load(f)
+        # Check if cache is from today
+        if cache_data.get("date") == _today_str():
+            return cache_data
+        return None
+    except Exception:
+        return None
+
+def write_standard_cache(country: str, payload: Dict[str, Any]) -> None:
+    """Write standard search cache for a country."""
+    try:
+        cache_data = {
+            "date": _today_str(),
+            "created_at": datetime.now().isoformat(timespec="seconds"),
+            "country": country,
+            "payload": payload,
+        }
+        path = _standard_cache_path(country)
+        with path.open("w", encoding="utf-8") as f:
+            json.dump(cache_data, f, ensure_ascii=False)
+        print(f"Standard cache written for {country}")
+    except Exception as e:
+        print(f"Error writing standard cache for {country}: {e}")
+
+def is_standard_search(keywords: List[str], country: str, pages: int, per_page: int) -> bool:
+    """Check if this is a standard search request."""
+    standard_keywords = ["Revit", "Civil 3d", "AutoCAD", "navisworks", "bim360", "autodesk", "fusion", "powermill", "featurecam", "inventor"]
+    standard_countries = ["Kazakhstan", "Uzbekistan", "Казахстан", "Узбекистан"]
+    
+    # Check if keywords match standard search
+    if len(keywords) != len(standard_keywords):
+        return False
+    
+    keywords_sorted = sorted([kw.lower() for kw in keywords])
+    standard_keywords_sorted = sorted([kw.lower() for kw in standard_keywords])
+    
+    if keywords_sorted != standard_keywords_sorted:
+        return False
+    
+    # Check if country matches
+    if country not in standard_countries:
+        return False
+    
+    # Check if pages and per_page match standard
+    if pages != 100 or per_page != 100:
+        return False
+    
+    return True
+
+async def run_standard_searches():
+    """Run the two standard searches and cache the results."""
+    print("Starting standard searches...")
+    
+    # Standard search parameters
+    standard_keywords = ["Revit", "Civil 3d", "AutoCAD", "navisworks", "bim360", "autodesk", "fusion", "powermill", "featurecam", "inventor"]
+    countries = ["Kazakhstan", "Uzbekistan"]
+    
+    for country in countries:
+        try:
+            print(f"Running standard search for {country}...")
+            data = search_vacancies_in_kz(
+                keywords=standard_keywords,
+                country=country,
+                per_page=100,
+                pages=100,
+                products=None,
+                city_filter=""
+            )
+            
+            payload = {
+                "query": {
+                    "keywords": standard_keywords,
+                    "country": country,
+                    "pages": 100,
+                    "per_page": 100,
+                    "products": [],
+                    "city_filter": ""
+                },
+                "count": len(data),
+                "items": data,
+                "source": "api.hh.ru",
+                "cache_type": "standard"
+            }
+            
+            write_standard_cache(country, payload)
+            print(f"Standard search completed for {country}: {len(data)} jobs found")
+            
+        except Exception as e:
+            print(f"Error running standard search for {country}: {e}")
+
+async def standard_search_scheduler():
+    """
+    Run standard searches daily at 06:00 Asia/Almaty time without external schedulers.
+    """
+    print("Standard search scheduler started (06:00 Asia/Almaty)")
+    while True:
+        now = datetime.now(ZoneInfo('Asia/Almaty'))
+        next_run = now.replace(hour=6, minute=0, second=0, microsecond=0)
+        if now >= next_run:
+            next_run = next_run + timedelta(days=1)
+
+        sleep_seconds = (next_run - now).total_seconds()
+        try:
+            print(f"Next standard search run at {next_run.isoformat()} (in {int(sleep_seconds)}s)")
+            await asyncio.sleep(sleep_seconds)
+        except asyncio.CancelledError:
+            # App is shutting down
+            break
+
+        # Time to run
+        try:
+            await run_standard_searches()
+        except Exception as e:
+            print(f"Error during scheduled standard searches: {e}")
+        # Small delay before computing next run
+        await asyncio.sleep(1)
+
+@app.on_event("startup")
+async def startup_event():
+    """Start the scheduler when the app starts."""
+    # Start the scheduler in the background
+    asyncio.create_task(standard_search_scheduler())
+    
+    # Also run standard searches immediately on startup if they haven't been run today
+    print("Checking if standard searches need to be run...")
+    for country in ["Kazakhstan", "Uzbekistan"]:
+        if not read_standard_cache(country):
+            print(f"No standard cache found for {country}, running search...")
+            await run_standard_searches()
+            break
 
 def hh_get(path, params=None):
     r = requests.get(
@@ -177,7 +325,7 @@ def get_company_vacancies_count(employer_id: str) -> int:
     # If not found, return 0
     return 0
 
-def search_vacancies_in_kz(keywords: List[str], country="Kazakhstan", per_page=100, pages=1, products=None):
+def search_vacancies_in_kz(keywords: List[str], country="Kazakhstan", per_page=100, pages=1, products=None, city_filter=""):
     area_id = get_area_id_for_country(country)
     print(f"Searching in {country} (area_id: {area_id})")
 
@@ -198,6 +346,12 @@ def search_vacancies_in_kz(keywords: List[str], country="Kazakhstan", per_page=1
     for kw in processed_keywords:
         if kw not in unique_keywords:
             unique_keywords.append(kw)
+    
+    # Process city filter
+    city_filter_list = []
+    if city_filter:
+        city_filter_list = [city.strip() for city in city_filter.split(',') if city.strip()]
+        print(f"City filter: {city_filter_list}")
     
     print(f"Processed keywords: {unique_keywords}")
     
@@ -273,6 +427,12 @@ def search_vacancies_in_kz(keywords: List[str], country="Kazakhstan", per_page=1
                         if not any(product.lower() in job_text_lower for product in products):
                             continue
                     
+                    # Apply city filtering if specified
+                    if city_filter_list:
+                        job_city = (item.get("area") or {}).get("name", "")
+                        if not any(city.lower() in job_city.lower() for city in city_filter_list):
+                            continue
+                    
                     # Detect all mentioned products in job title and description
                     job_text = f"{item.get('name', '')} {item.get('snippet', {}).get('requirement', '')} {item.get('snippet', {}).get('responsibility', '')}"
                     job_text_lower = job_text.lower()
@@ -339,6 +499,7 @@ def get_jobs(
     pages: int = Query(default=1),
     per_page: int = Query(default=100),
     products: List[str] = Query(default=[], description="Filter by specific products"),
+    city_filter: str = Query(default="", description="Filter by city (comma-separated)"),
     refresh: bool = Query(default=False, description="Force refresh, bypass daily cache"),
 ):
     # Build canonical request signature
@@ -348,7 +509,16 @@ def get_jobs(
         "pages": pages,
         "per_page": per_page,
         "products": products,
+        "city_filter": city_filter,
     }
+
+    # Check if this is a standard search request
+    if is_standard_search(keywords, country, pages, per_page) and not refresh:
+        # Try to get from standard cache first
+        standard_cache = read_standard_cache(country)
+        if standard_cache:
+            print(f"Serving standard cache for {country}")
+            return JSONResponse(standard_cache["payload"])
 
     # 1) Serve today's persisted snapshot if present for this exact request
     if not refresh:
@@ -363,12 +533,12 @@ def get_jobs(
         return JSONResponse(cached)
 
     try:
-        data = search_vacancies_in_kz(keywords, country=country, per_page=per_page, pages=pages, products=products)
+        data = search_vacancies_in_kz(keywords, country=country, per_page=per_page, pages=pages, products=products, city_filter=city_filter)
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
 
     payload = {
-        "query": {"keywords": keywords, "country": country, "pages": pages, "per_page": per_page, "products": products},
+        "query": {"keywords": keywords, "country": country, "pages": pages, "per_page": per_page, "products": products, "city_filter": city_filter},
         "count": len(data),
         "items": data,
         "source": "api.hh.ru",
@@ -378,6 +548,37 @@ def get_jobs(
     # 3) Persist as today's snapshot so subsequent requests serve the same data today
     write_daily_snapshot(payload=payload, request_params=request_signature)
     return JSONResponse(payload)
+
+@app.post("/trigger-standard-searches")
+async def trigger_standard_searches():
+    """Manually trigger the standard searches (for testing)."""
+    try:
+        await run_standard_searches()
+        return JSONResponse({"message": "Standard searches completed successfully"})
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+@app.get("/standard-cache-status")
+def get_standard_cache_status():
+    """Get the status of standard cache files."""
+    status = {}
+    for country in ["Kazakhstan", "Uzbekistan"]:
+        cache_data = read_standard_cache(country)
+        if cache_data:
+            status[country] = {
+                "exists": True,
+                "date": cache_data.get("date"),
+                "created_at": cache_data.get("created_at"),
+                "job_count": len(cache_data.get("payload", {}).get("items", []))
+            }
+        else:
+            status[country] = {
+                "exists": False,
+                "date": None,
+                "created_at": None,
+                "job_count": 0
+            }
+    return JSONResponse(status)
 
 if __name__ == "__main__":
     import uvicorn
