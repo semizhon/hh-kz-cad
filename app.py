@@ -204,7 +204,14 @@ async def standard_search_scheduler():
     """
     print("Standard search scheduler started (06:00 Asia/Almaty)")
     while True:
-        now = datetime.now(ZoneInfo('Asia/Almaty'))
+        try:
+            almaty_tz = ZoneInfo('Asia/Almaty')
+        except Exception:
+            # Fallback if tzdata is not available in the runtime image
+            from datetime import timezone as _tz, timedelta as _td
+            almaty_tz = _tz(_td(hours=6))
+
+        now = datetime.now(almaty_tz)
         next_run = now.replace(hour=6, minute=0, second=0, microsecond=0)
         if now >= next_run:
             next_run = next_run + timedelta(days=1)
