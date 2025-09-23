@@ -18,7 +18,7 @@ HH_API = "https://api.hh.ru"
 UA = os.environ.get("HH_USER_AGENT", "HH-KZ-CAD-Jobs/1.0 (mumble_subject_0a@icloud.com)")
 KEYWORDS_DEFAULT = ["AutoCAD,Revit,Inventor,Fusion 360,Fusion,Advance Steel"]
 
-app = FastAPI(title="HH KZ CAD Jobs API", version="1.0.0")
+app = FastAPI(title="HH KZ CAD Jobs API", version="1.0.0", lifespan=lifespan)
 
 # Setup templates
 templates = Jinja2Templates(directory="templates")
@@ -232,9 +232,12 @@ async def standard_search_scheduler():
         # Small delay before computing next run
         await asyncio.sleep(1)
 
-@app.on_event("startup")
-async def startup_event():
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     """Start the scheduler when the app starts."""
+    print("Starting HH KZ CAD Jobs application...")
     # Start the scheduler in the background
     asyncio.create_task(standard_search_scheduler())
     
@@ -245,6 +248,10 @@ async def startup_event():
             print(f"No standard cache found for {country}, running search...")
             await run_standard_searches()
             break
+    
+    print("Application startup complete!")
+    yield
+    print("Application shutdown complete!")
 
 def hh_get(path, params=None):
     r = requests.get(
@@ -498,6 +505,11 @@ def search_vacancies_in_kz(keywords: List[str], country="Kazakhstan", per_page=1
 async def root(request: Request):
     """Serve the main web interface."""
     return templates.TemplateResponse("index.html", {"request": request})
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for Railway."""
+    return {"status": "healthy", "message": "HH KZ CAD Jobs API is running"}
 
 @app.get("/jobs")
 def get_jobs(

@@ -20,5 +20,5 @@ EXPOSE 8080
 # Set environment variables
 ENV ENVIRONMENT=production
 
-# Start command - use Railway's PORT environment variable
-CMD ["sh", "-c", "uvicorn app:app --host 0.0.0.0 --port ${PORT:-8080}"]
+# Start command - use Railway's PORT environment variable with debug logging
+CMD ["sh", "-c", "echo 'Starting app on port $PORT' && uvicorn app:app --host 0.0.0.0 --port ${PORT:-8080} --log-level debug"]
