@@ -159,8 +159,17 @@ def search_vacancies_in_kz(keywords: List[str], country: str = "Kazakhstan", pag
                                       timeout=30)  # 30 second timeout
                 
                 if response.status_code == 200:
-                    data = response.json()
-                    vacancies = data.get("items", [])
+                    try:
+                        data = response.json()
+                        print(f"Page {page} response data keys: {list(data.keys()) if data else 'None'}")
+                        if data is None:
+                            print(f"Warning: response.json() returned None for page {page}")
+                            continue
+                        vacancies = data.get("items", [])
+                    except Exception as json_error:
+                        print(f"JSON parsing error on page {page}: {json_error}")
+                        print(f"Response text: {response.text[:200]}...")
+                        continue
                     
                     # Apply city filter if specified
                     if city_filter:
@@ -180,6 +189,7 @@ def search_vacancies_in_kz(keywords: List[str], country: str = "Kazakhstan", pag
                         break
                 else:
                     print(f"Error fetching page {page}: {response.status_code}")
+                    print(f"Response text: {response.text[:200]}...")
                     break
                     
             except Exception as e:
