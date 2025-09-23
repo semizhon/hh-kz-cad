@@ -197,9 +197,19 @@ def search_vacancies_in_kz(keywords: List[str], country: str = "Kazakhstan", pag
                 break
     
         # Add city information to each vacancy
-        for vacancy in all_vacancies:
-            address = vacancy.get("address", {})
-            vacancy["city"] = address.get("city", "Unknown")
+        print(f"Processing {len(all_vacancies)} vacancies...")
+        for i, vacancy in enumerate(all_vacancies):
+            if vacancy is None:
+                print(f"Warning: Found None vacancy at index {i}")
+                continue
+            try:
+                print(f"Vacancy {i} type: {type(vacancy)}, keys: {list(vacancy.keys()) if hasattr(vacancy, 'keys') else 'No keys'}")
+                address = vacancy.get("address", {})
+                vacancy["city"] = address.get("city", "Unknown") if address else "Unknown"
+            except Exception as e:
+                print(f"Error processing vacancy {i}: {e}")
+                print(f"Vacancy content: {vacancy}")
+                vacancy["city"] = "Unknown"
         
         result = {
             "vacancies": all_vacancies,
