@@ -15,7 +15,7 @@ import asyncio
 HH_API = "https://api.hh.ru"
 # Use your email in UA to be a good API citizen (optional but recommended)
 UA = os.environ.get("HH_USER_AGENT", "HH-KZ-CAD-Jobs/1.0 (mumble_subject_0a@icloud.com)")
-KEYWORDS_DEFAULT = ["AutoCAD, Revit, Civil 3D"]
+KEYWORDS_DEFAULT = ["AutoCAD, Revit, Civil 3D, Inventor, Fusion 360, Navisworks, BIM, Autodesk, Advance Steel, PowerMill, FeatureCAM"]
 
 # Create FastAPI app - NO LIFESPAN PARAMETER
 app = FastAPI(title="HH KZ CAD Jobs API", version="1.0.0")
@@ -143,7 +143,7 @@ def search_vacancies_in_kz(keywords: List[str], country: str = "Kazakhstan", pag
     
     for page in range(pages):
         params = {
-            "text": " ".join(keywords),
+            "text": " OR ".join(keywords),
             "area": area_id,
             "per_page": per_page,
             "page": page,
