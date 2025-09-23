@@ -19,7 +19,6 @@ EXPOSE 8080
 
 # Set environment variables
 ENV ENVIRONMENT=production
-ENV PORT=8080
 
-# Start command
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8080"]
+# Start command - use Railway's PORT environment variable
+CMD ["sh", "-c", "uvicorn app:app --host 0.0.0.0 --port ${PORT:-8080}"]
