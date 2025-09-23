@@ -19,26 +19,7 @@ HH_API = "https://api.hh.ru"
 UA = os.environ.get("HH_USER_AGENT", "HH-KZ-CAD-Jobs/1.0 (mumble_subject_0a@icloud.com)")
 KEYWORDS_DEFAULT = ["AutoCAD,Revit,Inventor,Fusion 360,Fusion,Advance Steel"]
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """Start the scheduler when the app starts."""
-    print("Starting HH KZ CAD Jobs application...")
-    # Start the scheduler in the background
-    asyncio.create_task(standard_search_scheduler())
-    
-    # Also run standard searches immediately on startup if they haven't been run today
-    print("Checking if standard searches need to be run...")
-    for country in ["Kazakhstan", "Uzbekistan"]:
-        if not read_standard_cache(country):
-            print(f"No standard cache found for {country}, running search...")
-            await run_standard_searches()
-            break
-    
-    print("Application startup complete!")
-    yield
-    print("Application shutdown complete!")
-
-app = FastAPI(title="HH KZ CAD Jobs API", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title="HH KZ CAD Jobs API", version="1.0.0")
 
 # Setup templates
 templates = Jinja2Templates(directory="templates")
@@ -616,3 +597,20 @@ if __name__ == "__main__":
     print(f"Environment: {os.environ.get('ENVIRONMENT', 'development')}")
     
     uvicorn.run("app:app", host=host, port=port, reload=reload, log_level="info")
+
+@app.on_event("startup")
+async def startup_event():
+    """Start the scheduler when the app starts."""
+    print("Starting HH KZ CAD Jobs application...")
+    # Start the scheduler in the background
+    asyncio.create_task(standard_search_scheduler())
+    
+    # Also run standard searches immediately on startup if they haven't been run today
+    print("Checking if standard searches need to be run...")
+    for country in ["Kazakhstan", "Uzbekistan"]:
+        if not read_standard_cache(country):
+            print(f"No standard cache found for {country}, running search...")
+            await run_standard_searches()
+            break
+    
+    print("Application startup complete!")
