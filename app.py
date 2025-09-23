@@ -314,10 +314,6 @@ def get_jobs(
 ):
     """Get job vacancies with optional city filtering."""
     try:
-        # Limit pages and per_page to prevent timeouts
-        pages = min(pages, 10)  # Max 10 pages
-        per_page = min(per_page, 50)  # Max 50 per page
-        
         print(f"Received request: keywords={keywords}, country={country}, pages={pages}, per_page={per_page}")
         
         # Check if this is a standard search and we have cached results
