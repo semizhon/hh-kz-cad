@@ -12,11 +12,31 @@ from fastapi.responses import JSONResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import asyncio
+from contextlib import asynccontextmanager
 
 HH_API = "https://api.hh.ru"
 # Use your email in UA to be a good API citizen (optional but recommended)
 UA = os.environ.get("HH_USER_AGENT", "HH-KZ-CAD-Jobs/1.0 (mumble_subject_0a@icloud.com)")
 KEYWORDS_DEFAULT = ["AutoCAD,Revit,Inventor,Fusion 360,Fusion,Advance Steel"]
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Start the scheduler when the app starts."""
+    print("Starting HH KZ CAD Jobs application...")
+    # Start the scheduler in the background
+    asyncio.create_task(standard_search_scheduler())
+    
+    # Also run standard searches immediately on startup if they haven't been run today
+    print("Checking if standard searches need to be run...")
+    for country in ["Kazakhstan", "Uzbekistan"]:
+        if not read_standard_cache(country):
+            print(f"No standard cache found for {country}, running search...")
+            await run_standard_searches()
+            break
+    
+    print("Application startup complete!")
+    yield
+    print("Application shutdown complete!")
 
 app = FastAPI(title="HH KZ CAD Jobs API", version="1.0.0", lifespan=lifespan)
 
@@ -232,26 +252,6 @@ async def standard_search_scheduler():
         # Small delay before computing next run
         await asyncio.sleep(1)
 
-from contextlib import asynccontextmanager
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """Start the scheduler when the app starts."""
-    print("Starting HH KZ CAD Jobs application...")
-    # Start the scheduler in the background
-    asyncio.create_task(standard_search_scheduler())
-    
-    # Also run standard searches immediately on startup if they haven't been run today
-    print("Checking if standard searches need to be run...")
-    for country in ["Kazakhstan", "Uzbekistan"]:
-        if not read_standard_cache(country):
-            print(f"No standard cache found for {country}, running search...")
-            await run_standard_searches()
-            break
-    
-    print("Application startup complete!")
-    yield
-    print("Application shutdown complete!")
 
 def hh_get(path, params=None):
     r = requests.get(
