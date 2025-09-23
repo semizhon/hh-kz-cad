@@ -600,4 +600,7 @@ if __name__ == "__main__":
     # Disable reload in production
     reload = os.environ.get("ENVIRONMENT") != "production"
     
-    uvicorn.run("app:app", host=host, port=port, reload=reload)
+    print(f"Starting server on {host}:{port}, reload={reload}")
+    print(f"Environment: {os.environ.get('ENVIRONMENT', 'development')}")
+    
+    uvicorn.run("app:app", host=host, port=port, reload=reload, log_level="info")
