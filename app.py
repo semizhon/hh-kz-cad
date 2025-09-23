@@ -129,17 +129,19 @@ def get_area_id_for_country(country_name="Kazakhstan"):
 
 def search_vacancies_in_kz(keywords: List[str], country: str = "Kazakhstan", pages: int = 5, per_page: int = 20, city_filter: str = None):
     """Search for vacancies in Kazakhstan/Uzbekistan with city filtering."""
-    area_id = get_area_id_for_country(country)
-    if not area_id:
-        return {"error": f"Country '{country}' not found"}
-    
-    # Create cache key
-    cache_key = f"search_{hashlib.md5(f'{keywords}_{country}_{pages}_{per_page}_{city_filter}'.encode()).hexdigest()}"
-    cached_result = cache_get(cache_key, ttl_sec=300)  # 5 minute cache
-    if cached_result:
-        return cached_result
-    
-    all_vacancies = []
+    try:
+        print(f"Searching for keywords: {keywords}")
+        area_id = get_area_id_for_country(country)
+        if not area_id:
+            return {"error": f"Country '{country}' not found"}
+        
+        # Create cache key
+        cache_key = f"search_{hashlib.md5(f'{keywords}_{country}_{pages}_{per_page}_{city_filter}'.encode()).hexdigest()}"
+        cached_result = cache_get(cache_key, ttl_sec=300)  # 5 minute cache
+        if cached_result:
+            return cached_result
+        
+        all_vacancies = []
     
     for page in range(pages):
         params = {
@@ -183,22 +185,26 @@ def search_vacancies_in_kz(keywords: List[str], country: str = "Kazakhstan", pag
             print(f"Exception on page {page}: {e}")
             break
     
-    # Add city information to each vacancy
-    for vacancy in all_vacancies:
-        address = vacancy.get("address", {})
-        vacancy["city"] = address.get("city", "Unknown")
-    
-    result = {
-        "vacancies": all_vacancies,
-        "total_found": len(all_vacancies),
-        "country": country,
-        "keywords": keywords,
-        "pages_searched": pages,
-        "per_page": per_page
-    }
-    
-    cache_set(cache_key, result)
-    return result
+        # Add city information to each vacancy
+        for vacancy in all_vacancies:
+            address = vacancy.get("address", {})
+            vacancy["city"] = address.get("city", "Unknown")
+        
+        result = {
+            "vacancies": all_vacancies,
+            "total_found": len(all_vacancies),
+            "country": country,
+            "keywords": keywords,
+            "pages_searched": pages,
+            "per_page": per_page
+        }
+        
+        cache_set(cache_key, result)
+        return result
+        
+    except Exception as e:
+        print(f"Error in search_vacancies_in_kz: {e}")
+        return {"error": f"Search error: {str(e)}"}
 
 async def run_standard_searches():
     """Run the standard searches and cache them."""
@@ -269,16 +275,24 @@ def get_jobs(
     city_filter: str = Query(default=None, description="Filter by city")
 ):
     """Get job vacancies with optional city filtering."""
-    
-    # Check if this is a standard search and we have cached results
-    if is_standard_search(keywords, country, pages, per_page):
-        standard_cache = read_standard_cache(country)
-        if standard_cache:
-            print(f"Serving standard search from cache for {country}")
-            return standard_cache
-    
-    # Otherwise, perform a regular search
-    return search_vacancies_in_kz(keywords, country, pages, per_page, city_filter)
+    try:
+        print(f"Received request: keywords={keywords}, country={country}, pages={pages}, per_page={per_page}")
+        
+        # Check if this is a standard search and we have cached results
+        if is_standard_search(keywords, country, pages, per_page):
+            standard_cache = read_standard_cache(country)
+            if standard_cache:
+                print(f"Serving standard search from cache for {country}")
+                return standard_cache
+        
+        # Otherwise, perform a regular search
+        result = search_vacancies_in_kz(keywords, country, pages, per_page, city_filter)
+        print(f"Search completed, returning {result.get('total_found', 0)} results")
+        return result
+        
+    except Exception as e:
+        print(f"Error in get_jobs: {e}")
+        return {"error": f"Internal server error: {str(e)}"}
 
 @app.post("/trigger-standard-searches")
 async def trigger_standard_searches():
