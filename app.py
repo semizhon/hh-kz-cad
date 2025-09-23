@@ -221,6 +221,11 @@ def search_vacancies_in_kz(keywords: List[str], country: str = "Kazakhstan", pag
                 print(f"Vacancy content: {vacancy}")
                 vacancy["city"] = "Unknown"
         
+        print(f"Creating result with {len(all_vacancies)} vacancies")
+        print(f"all_vacancies type: {type(all_vacancies)}")
+        if all_vacancies:
+            print(f"First vacancy type: {type(all_vacancies[0])}")
+        
         result = {
             "vacancies": all_vacancies,
             "total_found": len(all_vacancies),
@@ -234,7 +239,9 @@ def search_vacancies_in_kz(keywords: List[str], country: str = "Kazakhstan", pag
         return result
         
     except Exception as e:
+        import traceback
         print(f"Error in search_vacancies_in_kz: {e}")
+        print(f"Full traceback: {traceback.format_exc()}")
         return {"error": f"Search error: {str(e)}"}
 
 async def run_standard_searches():
