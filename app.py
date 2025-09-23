@@ -142,48 +142,48 @@ def search_vacancies_in_kz(keywords: List[str], country: str = "Kazakhstan", pag
             return cached_result
         
         all_vacancies = []
-    
-    for page in range(pages):
-        params = {
-            "text": " OR ".join(keywords),
-            "area": area_id,
-            "per_page": per_page,
-            "page": page,
-            "only_with_salary": False
-        }
         
-        try:
-            response = requests.get(f"{HH_API}/vacancies", 
-                                  params=params, 
-                                  headers={"User-Agent": UA, "Accept": "application/json"})
+        for page in range(pages):
+            params = {
+                "text": " OR ".join(keywords),
+                "area": area_id,
+                "per_page": per_page,
+                "page": page,
+                "only_with_salary": False
+            }
             
-            if response.status_code == 200:
-                data = response.json()
-                vacancies = data.get("items", [])
+            try:
+                response = requests.get(f"{HH_API}/vacancies", 
+                                      params=params, 
+                                      headers={"User-Agent": UA, "Accept": "application/json"})
                 
-                # Apply city filter if specified
-                if city_filter:
-                    filtered_vacancies = []
-                    for vacancy in vacancies:
-                        # Check if city filter matches any part of the address
-                        address = vacancy.get("address", {})
-                        city = address.get("city", "")
-                        if city_filter.lower() in city.lower():
-                            filtered_vacancies.append(vacancy)
-                    vacancies = filtered_vacancies
-                
-                all_vacancies.extend(vacancies)
-                
-                # If we got fewer results than requested, we've reached the end
-                if len(vacancies) < per_page:
+                if response.status_code == 200:
+                    data = response.json()
+                    vacancies = data.get("items", [])
+                    
+                    # Apply city filter if specified
+                    if city_filter:
+                        filtered_vacancies = []
+                        for vacancy in vacancies:
+                            # Check if city filter matches any part of the address
+                            address = vacancy.get("address", {})
+                            city = address.get("city", "")
+                            if city_filter.lower() in city.lower():
+                                filtered_vacancies.append(vacancy)
+                        vacancies = filtered_vacancies
+                    
+                    all_vacancies.extend(vacancies)
+                    
+                    # If we got fewer results than requested, we've reached the end
+                    if len(vacancies) < per_page:
+                        break
+                else:
+                    print(f"Error fetching page {page}: {response.status_code}")
                     break
-            else:
-                print(f"Error fetching page {page}: {response.status_code}")
+                    
+            except Exception as e:
+                print(f"Exception on page {page}: {e}")
                 break
-                
-        except Exception as e:
-            print(f"Exception on page {page}: {e}")
-            break
     
         # Add city information to each vacancy
         for vacancy in all_vacancies:
