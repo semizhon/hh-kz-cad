@@ -725,7 +725,7 @@
         }
 
         function displayResults(data) {
-            currentData = data.items || [];
+            currentData = data.vacancies || [];
             
             if (currentData.length === 0) {
                 document.getElementById('noResults').style.display = 'block';
@@ -737,7 +737,7 @@
         }
 
         function displayStats(data) {
-            const stats = calculateStats(data.items);
+            const stats = calculateStats(data.vacancies);
             const statsGrid = document.getElementById('statsGrid');
             
             statsGrid.innerHTML = `
