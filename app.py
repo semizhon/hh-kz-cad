@@ -166,6 +166,9 @@ def search_vacancies_in_kz(keywords: List[str], country: str = "Kazakhstan", pag
                             print(f"Warning: response.json() returned None for page {page}")
                             continue
                         vacancies = data.get("items", [])
+                        print(f"Page {page}: Got {len(vacancies)} vacancies from API")
+                        if vacancies:
+                            print(f"First vacancy type: {type(vacancies[0])}, keys: {list(vacancies[0].keys()) if hasattr(vacancies[0], 'keys') else 'No keys'}")
                     except Exception as json_error:
                         print(f"JSON parsing error on page {page}: {json_error}")
                         print(f"Response text: {response.text[:200]}...")
@@ -175,11 +178,18 @@ def search_vacancies_in_kz(keywords: List[str], country: str = "Kazakhstan", pag
                     if city_filter:
                         filtered_vacancies = []
                         for vacancy in vacancies:
-                            # Check if city filter matches any part of the address
-                            address = vacancy.get("address", {})
-                            city = address.get("city", "")
-                            if city_filter.lower() in city.lower():
-                                filtered_vacancies.append(vacancy)
+                            if vacancy is None:
+                                print(f"Warning: Found None vacancy in city filter")
+                                continue
+                            try:
+                                # Check if city filter matches any part of the address
+                                address = vacancy.get("address", {})
+                                city = address.get("city", "") if address else ""
+                                if city_filter.lower() in city.lower():
+                                    filtered_vacancies.append(vacancy)
+                            except Exception as e:
+                                print(f"Error in city filter for vacancy: {e}")
+                                continue
                         vacancies = filtered_vacancies
                     
                     all_vacancies.extend(vacancies)
