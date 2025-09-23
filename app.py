@@ -155,7 +155,8 @@ def search_vacancies_in_kz(keywords: List[str], country: str = "Kazakhstan", pag
             try:
                 response = requests.get(f"{HH_API}/vacancies", 
                                       params=params, 
-                                      headers={"User-Agent": UA, "Accept": "application/json"})
+                                      headers={"User-Agent": UA, "Accept": "application/json"},
+                                      timeout=30)  # 30 second timeout
                 
                 if response.status_code == 200:
                     data = response.json()
@@ -276,6 +277,10 @@ def get_jobs(
 ):
     """Get job vacancies with optional city filtering."""
     try:
+        # Limit pages and per_page to prevent timeouts
+        pages = min(pages, 10)  # Max 10 pages
+        per_page = min(per_page, 50)  # Max 50 per page
+        
         print(f"Received request: keywords={keywords}, country={country}, pages={pages}, per_page={per_page}")
         
         # Check if this is a standard search and we have cached results
@@ -317,19 +322,14 @@ def get_standard_cache_status():
 @app.on_event("startup")
 async def startup_event():
     """Start the scheduler when the app starts."""
-    print("Starting HH KZ CAD Jobs application...")
-    # Start the scheduler in the background
-    asyncio.create_task(standard_search_scheduler())
-    
-    # Also run standard searches immediately on startup if they haven't been run today
-    print("Checking if standard searches need to be run...")
-    for country in ["Kazakhstan", "Uzbekistan"]:
-        if not read_standard_cache(country):
-            print(f"No standard cache found for {country}, running search...")
-            await run_standard_searches()
-            break
-    
-    print("Application startup complete!")
+    try:
+        print("Starting HH KZ CAD Jobs application...")
+        # Start the scheduler in the background
+        asyncio.create_task(standard_search_scheduler())
+        print("Application startup complete!")
+    except Exception as e:
+        print(f"Error during startup: {e}")
+        # Don't let startup errors crash the app
 
 if __name__ == "__main__":
     import uvicorn
