@@ -1,6 +1,6 @@
 FROM python:3.9-slim
 
-# Force rebuild - cache bust
+# Force rebuild - cache bust - CLEAN VERSION
 WORKDIR /app
 
 # Install system dependencies
