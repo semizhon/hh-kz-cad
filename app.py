@@ -90,7 +90,25 @@ def get_area_id_for_country(country_name="Kazakhstan"):
         "Узбекистан": "97", 
         "Uzbekistan": "97",
         "Россия": "113",
-        "Russia": "113"
+        "Russia": "113",
+        "Georgia": "16",
+        "Грузия": "16",
+        "Armenia": "1",
+        "Армения": "1",
+        "Azerbaijan": "9",
+        "Азербайджан": "9",
+        "Kyrgyzstan": "43",
+        "Кыргызстан": "43",
+        "Tajikistan": "96",
+        "Таджикистан": "96",
+        "Turkmenistan": "98",
+        "Туркменистан": "98",
+        "Belarus": "16",
+        "Беларусь": "16",
+        "Ukraine": "5",
+        "Украина": "5",
+        "Moldova": "50",
+        "Молдова": "50"
     }
     
     if country_name in country_mapping:
