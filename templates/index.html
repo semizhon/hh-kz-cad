@@ -727,6 +727,16 @@
         function displayResults(data) {
             currentData = data.vacancies || [];
             
+            // Debug: Log the data structure
+            console.log('Received data:', data);
+            console.log('Current data length:', currentData.length);
+            if (currentData.length > 0) {
+                console.log('First job:', currentData[0]);
+                console.log('First job title:', currentData[0].title);
+                console.log('First job company:', currentData[0].company);
+                console.log('First job employment:', currentData[0].employment);
+            }
+            
             if (currentData.length === 0) {
                 document.getElementById('noResults').style.display = 'block';
                 return;

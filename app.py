@@ -274,6 +274,10 @@ def search_vacancies_in_kz(keywords: List[str], country: str = "Kazakhstan", pag
         print(f"all_vacancies type: {type(all_vacancies)}")
         if all_vacancies:
             print(f"First vacancy type: {type(all_vacancies[0])}")
+            print(f"First vacancy keys: {list(all_vacancies[0].keys()) if hasattr(all_vacancies[0], 'keys') else 'No keys'}")
+            print(f"First vacancy title: {all_vacancies[0].get('title', 'NO TITLE')}")
+            print(f"First vacancy company: {all_vacancies[0].get('company', 'NO COMPANY')}")
+            print(f"First vacancy employment: {all_vacancies[0].get('employment', 'NO EMPLOYMENT')}")
         
         result = {
             "vacancies": all_vacancies,
