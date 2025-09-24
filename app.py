@@ -169,6 +169,10 @@ def search_vacancies_in_kz(keywords: List[str], country: str = "Kazakhstan", pag
                         print(f"Page {page}: Got {len(vacancies)} vacancies from API")
                         if vacancies:
                             print(f"First vacancy type: {type(vacancies[0])}, keys: {list(vacancies[0].keys()) if hasattr(vacancies[0], 'keys') else 'No keys'}")
+                            print(f"First vacancy name: {vacancies[0].get('name', 'NO NAME')}")
+                            print(f"First vacancy employer: {vacancies[0].get('employer', 'NO EMPLOYER')}")
+                            print(f"First vacancy employment: {vacancies[0].get('employment', 'NO EMPLOYMENT')}")
+                            print(f"First vacancy salary: {vacancies[0].get('salary', 'NO SALARY')}")
                     except Exception as json_error:
                         print(f"JSON parsing error on page {page}: {json_error}")
                         print(f"Response text: {response.text[:200]}...")
@@ -247,7 +251,12 @@ def search_vacancies_in_kz(keywords: List[str], country: str = "Kazakhstan", pag
                 
                 # Add employment type
                 employment = vacancy.get("employment", {})
-                vacancy["employment"] = employment.get("name", "Не указано") if employment else "Не указано"
+                if employment and isinstance(employment, dict):
+                    vacancy["employment"] = employment.get("name", "Не указано")
+                elif employment and isinstance(employment, str):
+                    vacancy["employment"] = employment
+                else:
+                    vacancy["employment"] = "Не указано"
                 
                 # Add published date
                 published_at = vacancy.get("published_at")
@@ -259,6 +268,12 @@ def search_vacancies_in_kz(keywords: List[str], country: str = "Kazakhstan", pag
                 # Add source keyword (for CAD product tracking)
                 vacancy["source_keyword"] = " OR ".join(keywords)
                 
+                # Add job URL
+                vacancy["url"] = vacancy.get("alternate_url", "#")
+                
+                # Add job ID for reference
+                vacancy["id"] = vacancy.get("id", "unknown")
+                
             except Exception as e:
                 print(f"Error processing vacancy {i}: {e}")
                 print(f"Vacancy content: {vacancy}")
@@ -269,6 +284,8 @@ def search_vacancies_in_kz(keywords: List[str], country: str = "Kazakhstan", pag
                 vacancy["employment"] = "Не указано"
                 vacancy["published_at"] = "Не указано"
                 vacancy["source_keyword"] = " OR ".join(keywords)
+                vacancy["url"] = "#"
+                vacancy["id"] = "unknown"
         
         print(f"Creating result with {len(all_vacancies)} vacancies")
         print(f"all_vacancies type: {type(all_vacancies)}")
