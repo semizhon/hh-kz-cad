@@ -206,7 +206,7 @@ def search_vacancies_in_kz(keywords: List[str], country: str = "Kazakhstan", pag
                 print(f"Exception on page {page}: {e}")
                 break
     
-        # Add city information to each vacancy
+        # Add city and company information to each vacancy
         print(f"Processing {len(all_vacancies)} vacancies...")
         for i, vacancy in enumerate(all_vacancies):
             if vacancy is None:
@@ -214,12 +214,22 @@ def search_vacancies_in_kz(keywords: List[str], country: str = "Kazakhstan", pag
                 continue
             try:
                 print(f"Vacancy {i} type: {type(vacancy)}, keys: {list(vacancy.keys()) if hasattr(vacancy, 'keys') else 'No keys'}")
+                
+                # Add city information
                 address = vacancy.get("address", {})
                 vacancy["city"] = address.get("city", "Unknown") if address else "Unknown"
+                
+                # Add company information
+                employer = vacancy.get("employer", {})
+                vacancy["company"] = employer.get("name", "Unknown Company") if employer else "Unknown Company"
+                vacancy["company_id"] = employer.get("id") if employer else None
+                vacancy["company_logo"] = employer.get("logo_urls", {}).get("90") if employer and employer.get("logo_urls") else None
+                
             except Exception as e:
                 print(f"Error processing vacancy {i}: {e}")
                 print(f"Vacancy content: {vacancy}")
                 vacancy["city"] = "Unknown"
+                vacancy["company"] = "Unknown Company"
         
         print(f"Creating result with {len(all_vacancies)} vacancies")
         print(f"all_vacancies type: {type(all_vacancies)}")
