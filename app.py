@@ -225,11 +225,50 @@ def search_vacancies_in_kz(keywords: List[str], country: str = "Kazakhstan", pag
                 vacancy["company_id"] = employer.get("id") if employer else None
                 vacancy["company_logo"] = employer.get("logo_urls", {}).get("90") if employer and employer.get("logo_urls") else None
                 
+                # Add job title
+                vacancy["title"] = vacancy.get("name", "Unknown Title")
+                
+                # Add salary information
+                salary = vacancy.get("salary", {})
+                if salary:
+                    salary_from = salary.get("from")
+                    salary_to = salary.get("to")
+                    salary_currency = salary.get("currency", "")
+                    if salary_from and salary_to:
+                        vacancy["salary"] = f"{salary_from:,} - {salary_to:,} {salary_currency}"
+                    elif salary_from:
+                        vacancy["salary"] = f"от {salary_from:,} {salary_currency}"
+                    elif salary_to:
+                        vacancy["salary"] = f"до {salary_to:,} {salary_currency}"
+                    else:
+                        vacancy["salary"] = "Не указана"
+                else:
+                    vacancy["salary"] = "Не указана"
+                
+                # Add employment type
+                employment = vacancy.get("employment", {})
+                vacancy["employment"] = employment.get("name", "Не указано") if employment else "Не указано"
+                
+                # Add published date
+                published_at = vacancy.get("published_at")
+                if published_at:
+                    vacancy["published_at"] = published_at
+                else:
+                    vacancy["published_at"] = "Не указано"
+                
+                # Add source keyword (for CAD product tracking)
+                vacancy["source_keyword"] = " OR ".join(keywords)
+                
             except Exception as e:
                 print(f"Error processing vacancy {i}: {e}")
                 print(f"Vacancy content: {vacancy}")
                 vacancy["city"] = "Unknown"
                 vacancy["company"] = "Unknown Company"
+                vacancy["title"] = "Unknown Title"
+                vacancy["salary"] = "Не указана"
+                vacancy["employment"] = "Не указано"
+                vacancy["published_at"] = "Не указано"
+                vacancy["source_keyword"] = " OR ".join(keywords)
         
         print(f"Creating result with {len(all_vacancies)} vacancies")
         print(f"all_vacancies type: {type(all_vacancies)}")
