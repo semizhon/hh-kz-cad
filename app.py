@@ -127,6 +127,43 @@ def get_area_id_for_country(country_name="Kazakhstan"):
     
     return None
 
+def extract_mentioned_products(vacancy, search_keywords):
+    """Extract CAD products mentioned in the job description."""
+    mentioned = []
+    
+    # Get job description text
+    description = vacancy.get("description", "")
+    snippet = vacancy.get("snippet", "")
+    name = vacancy.get("name", "")
+    
+    # Combine all text fields
+    full_text = f"{name} {description} {snippet}".lower()
+    
+    # Define CAD product keywords with variations
+    cad_products = {
+        "AutoCAD": ["autocad", "auto cad", "автокад"],
+        "Revit": ["revit", "ревит"],
+        "Civil 3D": ["civil 3d", "civil3d", "civil 3d", "сивил 3д"],
+        "Inventor": ["inventor", "инвентор"],
+        "Fusion 360": ["fusion 360", "fusion360", "фьюжн 360"],
+        "Navisworks": ["navisworks", "нависворкс"],
+        "BIM": ["bim", "бим"],
+        "Autodesk": ["autodesk", "автодеск"],
+        "Advance Steel": ["advance steel", "advancesteel", "адванс стил"],
+        "PowerMill": ["powermill", "power mill", "пауэрмил"],
+        "FeatureCAM": ["featurecam", "feature cam", "фичеркам"]
+    }
+    
+    # Check which products are mentioned
+    for product, variations in cad_products.items():
+        for variation in variations:
+            if variation in full_text:
+                if product not in mentioned:
+                    mentioned.append(product)
+                break
+    
+    return mentioned
+
 def search_vacancies_in_kz(keywords: List[str], country: str = "Kazakhstan", pages: int = 5, per_page: int = 20, city_filter: str = None):
     """Search for vacancies in Kazakhstan/Uzbekistan with city filtering."""
     try:
@@ -268,6 +305,10 @@ def search_vacancies_in_kz(keywords: List[str], country: str = "Kazakhstan", pag
                 # Add source keyword (for CAD product tracking)
                 vacancy["source_keyword"] = " OR ".join(keywords)
                 
+                # Extract mentioned CAD products from job description
+                mentioned_products = extract_mentioned_products(vacancy, keywords)
+                vacancy["mentioned_products"] = mentioned_products
+                
                 # Add job URL
                 vacancy["url"] = vacancy.get("alternate_url", "#")
                 
@@ -284,6 +325,7 @@ def search_vacancies_in_kz(keywords: List[str], country: str = "Kazakhstan", pag
                 vacancy["employment"] = "Не указано"
                 vacancy["published_at"] = "Не указано"
                 vacancy["source_keyword"] = " OR ".join(keywords)
+                vacancy["mentioned_products"] = []
                 vacancy["url"] = "#"
                 vacancy["id"] = "unknown"
         
